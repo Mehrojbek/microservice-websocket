@@ -1,0 +1,64 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # ===================================================
+      #               CORS GLOBAL CONFIGURATION
+      # ===================================================
+      # ===================================================
+      #                   ROUTES CONFIGURATION
+      # ===================================================
+      server:
+        webflux:
+          routes:
+            # A) WebSocket ulanishlari uchun marshrut
+                    - id: websocket_connect_route
+                      uri: lb://websocket-service
+                      predicates:
+                        - Path=/ws/**
+
+                    # B) Xabar yuborish uchun REST so'rovlariga marshrut
+                    - id: websocket_send_route
+                      uri: lb://websocket-service
+                      predicates:
+                        - Path=/api/send/**
+                      filters:
+                        - StripPrefix=1
+          globalcors:
+            cors-configurations:
+              # '[/**]' - barcha marshrutlarga qo'llaniladi
+                        '[/**]':
+                          # Ruxsat etilgan manbalar (origin). '*' - barcha manbalarga ruxsat beradi.
+                          # Production'da bu yerga aniq frontend domeningizni yozganingiz ma'qul.
+                          # Masalan: "http://my-frontend.com"
+                          allowedOrigins: "*"
+                          # Ruxsat etilgan HTTP metodlari
+                          allowedMethods:
+                            - GET
+                            - POST
+                            - PUT
+                            - DELETE
+                            - OPTIONS
+                          # Ruxsat etilgan header'lar. '*' - barcha header'larga ruxsat.
+                          allowedHeaders: "*"
+                          # Brauzerga pre-flight so'rov natijasini qancha vaqt keshda saqlashni bildiradi
+                          maxAge: 3600
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+
+eureka:
+  # ... qolgan Eureka sozlamalari o'zgarishsiz qoladi ...
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    hostname: localhost

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Microservice WebSocket Broadcast Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        /* CSS stillari o'zgarishsiz qoladi */
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px; }
+        h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-top: 0; }
+        button { padding: 8px 15px; border-radius: 4px; border: none; background-color: #007bff; color: white; cursor: pointer; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #notifications { height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<h1>WebSocket Broadcast Demo (Barchaga Yuborish)</h1>
+
+<div class="section">
+    <h2>1. WebSocket Connection</h2>
+    <button id="connect" onclick="connect()">Connect</button>
+    <button id="disconnect" onclick="disconnect()" disabled>Disconnect</button>
+    <p>Connection Status: <b id="status" style="color: red;">DISCONNECTED</b></p>
+</div>
+
+<div class="section">
+    <h2>2. Send Notification (via REST API)</h2>
+    <div class="form-group">
+        <label for="message">Message:</label>
+        <input type="text" id="message" placeholder="Hammaga salom!">
+    </div>
+    <!-- Target User ID endi kerak emas -->
+    <button id="sendMessage" onclick="sendNotification()" disabled>Send to All</button>
+</div>
+
+<div class="section">
+    <h2>3. Received Notifications</h2>
+    <div id="notifications"></div>
+</div>
+
+<script>
+    let stompClient = null;
+    const connectBtn = document.getElementById('connect');
+    const disconnectBtn = document.getElementById('disconnect');
+    const sendBtn = document.getElementById('sendMessage');
+
+    function connect() {
+        const url = 'ws://localhost:8080/ws';
+        stompClient = Stomp.client(url);
+
+        stompClient.connect({}, frame => {
+            updateUI(true);
+            console.log('Connected: ' + frame);
+
+            // ===============================================
+            //              UMUMIY KANALGA OBUNA
+            // ===============================================
+            stompClient.subscribe('/topic/public', message => {
+                const notification = JSON.parse(message.body);
+                // Xabarni ekranga chiroyli qilib chiqaramiz
+                const p = document.createElement('p');
+                p.innerHTML = `<b>${notification.userId}</b> says: ${notification.content}`;
+                document.getElementById('notifications').prepend(p);
+            });
+
+        }, error => {
+            console.error('Connection error: ' + error);
+            updateUI(false);
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        updateUI(false);
+        console.log("Disconnected");
+    }
+
+    function sendNotification() {
+        const message = document.getElementById('message').value.trim();
+        // Xabar kimdanligini bilish uchun biror bir "sender" nomi kerak,
+        // shuning uchun ixtiyoriy foydalanuvchi nomini yuboramiz.
+        const senderId = "user-" + Math.floor(Math.random() * 1000);
+
+        if (!message) {
+            alert('Message cannot be empty');
+            return;
+        }
+
+        // REST so'rovi o'zgarishsiz qoladi, u xabarni RabbitMQ'ga yuboradi
+        fetch(`http://localhost:8080/api/send/${senderId}/${encodeURIComponent(message)}`)
+            .then(response => console.log('API Response:', response.status));
+    }
+
+    function updateUI(isConnected) {
+        connectBtn.disabled = isConnected;
+        disconnectBtn.disabled = !isConnected;
+        sendBtn.disabled = isConnected;
+        document.getElementById('status').innerText = isConnected ? 'CONNECTED' : 'DISCONNECTED';
+        document.getElementById('status').style.color = isConnected ? 'green' : 'red';
+    }
+</script>
+</body>
+</html>

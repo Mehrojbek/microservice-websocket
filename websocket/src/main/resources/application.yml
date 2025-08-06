@@ -1,0 +1,31 @@
+server:
+  port: 8082 # Gateway'dan boshqa port
+
+spring:
+  application:
+    name: websocket-service # Eureka'da ko'rinadigan nom
+  rabbitmq:
+    host: localhost
+    port: 2672
+    username: guest # Standart
+    password: guest # Standart
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# O'zimizning maxsus sozlamalarimiz. Bu kodni toza saqlashga yordam beradi.
+app:
+  rabbitmq:
+    exchange-name: "notifications.exchange"
+    queue-name: "notifications.queue"
+    routing-key: "user.notification.#"
+
+#logging:
+#  level:
+#    org.springframework.messaging: TRACE
+#    org.springframework.web.socket: TRACE
+#    uz.dtc.websocket: DEBUG

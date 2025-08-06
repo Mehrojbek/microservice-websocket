@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management # Boshqaruv paneli bilan birga keladigan versiya
+    container_name: rabbitmq-websocket-demo
+    ports:
+      # application.yml'dagi portni (2672) konteynerning standart portiga (5672) bog'laymiz
+      - "2672:5672"
+      # Boshqaruv paneli uchun port. Brauzerda http://localhost:15672 orqali kiriladi
+      - "25672:15672"
+    environment:
+      # Standart login va parolni o'rnatish (ixtiyoriy)
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      # Ma'lumotlarni saqlab qolish uchun (ixtiyoriy, lekin production uchun tavsiya etiladi)
+      - rabbitmq_data:/var/lib/rabbitmq/
+
+volumes:
+  rabbitmq_data:
